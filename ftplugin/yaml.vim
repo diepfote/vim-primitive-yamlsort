@@ -1,6 +1,6 @@
 " BSD 2-Clause License
 
-" Copyright (c) 2021, Florian Begusch
+" Copyright (c) 2022, Florian Begusch
 " All rights reserved.
 
 " Redistribution and use in source and binary forms, with or without # modification, are permitted provided that the following conditions are met:
@@ -26,6 +26,8 @@
 function PrimitiveYamlSort()
   py3 << EOF
 
+from ruamel.yaml import YAML
+
 # select line before and after to have regex
 # pattern match first and last element properly
 start = vim.current.buffer.mark('<')[0] - 1
@@ -37,79 +39,22 @@ line_count_initial = len(buffer_range)
 
 content = '\n'.join(buffer_range)
 
-# ---------------------
-# regex hokuspokus
-import re
+yaml = YAML()
+yaml.indent(mapping=2, sequence=4, offset=2)
+parsed = yaml.load(content)
 
+try:
+  sorted_yaml = sorted(parsed, key=lambda member: member['name'].lower())
+except:
+  sorted_yaml = sorted(parsed, key=lambda member: member['mail'].lower())
 
-number_of_spaces_first_indent = len(vim.current.buffer[start].split('-', 1)[0])
-yml_array_elem_regex = \
-        re.compile("(?=^" + " " * number_of_spaces_first_indent +  "-)", (re.S|re.M))
+import io
+with io.StringIO() as output:
+  yaml.dump(sorted_yaml, output)
 
-yaml_array = yml_array_elem_regex.split(content)
-yaml_array[len(yaml_array)-1], line_after_select = \
-  yaml_array[len(yaml_array)-1].rsplit('\n', 1)
-
-for index, element in enumerate(yaml_array):
-    yaml_array[index] = element.replace('\n', '')
-
-line_count_after_hokuspokus = len(yaml_array)
-
-# ---------------------
-
-
-# replace buffer content with hokuspokus
-vim.current.buffer[start:end] = yaml_array
-
-
-# sort hokuspokused selection
-sort_command = f'{start},{end-line_count_after_hokuspokus+1}sort'
-vim.command(sort_command)
-
-
-# refresh content
-buffer_range = vim.current.buffer[start:end-line_count_after_hokuspokus+1]
-content = '\n'.join(buffer_range)
-yaml_array = content.splitlines()
-if not yaml_array[0]:
-  del yaml_array[0]
-
-
-# --------------------------
-# undo regex hokuspokus
-
-
-yml_sub_elem_regex = \
-        re.compile("(?=\s{" + str(2 + number_of_spaces_first_indent) + ",})", (re.S|re.M))
-
-yaml_array_new = []
-for index, element in enumerate(yaml_array):
-
-    sub_array = yml_sub_elem_regex.split(element)
-    if len(sub_array) > 1:
-        for subelement in sub_array:
-            yaml_array_new.append(subelement)
-    else:
-        yaml_array_new.append(element)
-
-# TODO maybe clean this up
-#
-# This inserts the line after the selection
-# which had to be added to the selection in
-# order for the regex pattern to match.
-#
-yaml_array_new.append(line_after_select)
-
-# replace buffer, undo hokuspokus
-vim.current.buffer[start:end-line_count_after_hokuspokus+1] = yaml_array_new
-
-# --------------------------
+  # replace buffer content
+  # vim.current.buffer[start:end] = yaml.dump(sorted_yaml).splitlines()
+  vim.current.buffer[start:end] = output.getvalue().splitlines()
 
 EOF
 endfunction
-
-" TODO list:
-" * key map
-" * set custom initial yaml indentation
-"   (now set to 2, and subelements start at 4)
-
