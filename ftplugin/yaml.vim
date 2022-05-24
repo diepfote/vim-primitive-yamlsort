@@ -23,7 +23,7 @@
 " OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 " OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-function PrimitiveYamlSort()
+function <SID>PrimitiveYamlSort()
   py3 << EOF
 
 from ruamel.yaml import YAML
@@ -58,3 +58,5 @@ with io.StringIO() as output:
 
 EOF
 endfunction
+
+command -range PrimitiveYamlSort :call <SID>PrimitiveYamlSort()
