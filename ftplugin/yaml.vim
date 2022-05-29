@@ -23,40 +23,38 @@
 " OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 " OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-function <SID>PrimitiveYamlSort()
-  py3 << EOF
+py3 << EOF
+def primtive_yaml_sort():
+  from ruamel.yaml import YAML
 
-from ruamel.yaml import YAML
+  # select line before and after to have regex
+  # pattern match first and last element properly
+  start = vim.current.range.start
+  if start < 0: start = 0
+  end = vim.current.range.end + 1
 
-# select line before and after to have regex
-# pattern match first and last element properly
-start = vim.current.buffer.mark('<')[0] - 1
-if start < 0: start = 0
-end = vim.current.buffer.mark('>')[0] + 1
+  buffer_range = vim.current.buffer[start:end]
+  line_count_initial = len(buffer_range)
 
-buffer_range = vim.current.buffer[start:end]
-line_count_initial = len(buffer_range)
+  content = '\n'.join(buffer_range)
 
-content = '\n'.join(buffer_range)
+  yaml = YAML()
+  yaml.indent(mapping=2, sequence=4, offset=2)
+  parsed = yaml.load(content)
 
-yaml = YAML()
-yaml.indent(mapping=2, sequence=4, offset=2)
-parsed = yaml.load(content)
+  try:
+    sorted_yaml = sorted(parsed, key=lambda member: member['name'].lower())
+  except:
+    sorted_yaml = sorted(parsed, key=lambda member: member['mail'].lower())
 
-try:
-  sorted_yaml = sorted(parsed, key=lambda member: member['name'].lower())
-except:
-  sorted_yaml = sorted(parsed, key=lambda member: member['mail'].lower())
+  import io
+  with io.StringIO() as output:
+    yaml.dump(sorted_yaml, output)
 
-import io
-with io.StringIO() as output:
-  yaml.dump(sorted_yaml, output)
-
-  # replace buffer content
-  # vim.current.buffer[start:end] = yaml.dump(sorted_yaml).splitlines()
-  vim.current.buffer[start:end] = output.getvalue().splitlines()
+    # replace buffer content
+    # vim.current.buffer[start:end] = yaml.dump(sorted_yaml).splitlines()
+    vim.current.buffer[start:end] = output.getvalue().splitlines()
 
 EOF
-endfunction
 
-command -range PrimitiveYamlSort :call <SID>PrimitiveYamlSort()
+command -range PrimitiveYamlSort :'<,'> py3do primtive_yaml_sort()
