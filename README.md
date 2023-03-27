@@ -8,4 +8,5 @@ additional keys please fork this repository and build your own.
 **Sidenote**: This plugin assumes you will select a yaml array on layer 2
 (indented once). It also assumes that nothing but the array is visually selected.
 
-TODO: Add GIF.
+<img src="./example.gif" width="600" />
+
